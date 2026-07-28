@@ -34,8 +34,8 @@ module.exports = {
         const kanal = anaGuild.channels.cache.find(c => c.name === kanalAdi && c.isTextBased());
         if (kanal) {
           try {
-            await kanal.send(`*${duyuru}*\n\n **${imza}**`);
-            basarili.push(`✅ ${anaGuild.name} (${kamp.isim})`);
+            await kanal.send(`*${duyuru}*\n\n**${imza}**`);
+            basarili.push(` ${anaGuild.name} (${kamp.isim})`);
           } catch (e) {
             basarisiz.push(`❌ ${anaGuild.name} (${kamp.isim}) - Mesaj gönderilemedi`);
           }
@@ -54,7 +54,7 @@ module.exports = {
           if (kanal) {
             try {
               await kanal.send(`📢 **${duyuru}**\n\n✍️ ${imza}`);
-              basarili.push(`✅ ${guild.name} (${kamp.isim} - ${b.isim})`);
+              basarili.push(` ${guild.name} (${kamp.isim} - ${b.isim})`);
             } catch (e) {
               basarisiz.push(`❌ ${guild.name} (${kamp.isim} - ${b.isim}) - Mesaj gönderilemedi`);
             }
@@ -67,7 +67,7 @@ module.exports = {
       }
     }
 
-    const mesaj = `✅ **Duyuru yayınlandı.**\n\n**Başarılı:**\n${basarili.join('\n') || 'Yok'}\n\n**Başarısız:**\n${basarisiz.join('\n') || 'Yok'}`;
+    const mesaj = ` **Duyuru yayınlandı.**\n\n**Başarılı:**\n${basarili.join('\n') || 'Yok'}\n\n**Başarısız:**\n${basarisiz.join('\n') || 'Yok'}`;
     await interaction.editReply(mesaj);
 
     await logIslem(interaction, 'duyuru', 'Duyuru yayınlandı', {

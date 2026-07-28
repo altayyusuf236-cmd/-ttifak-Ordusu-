@@ -9,8 +9,11 @@ const robloxClient = axios.create({
 
 async function getUserIdByUsername(username) {
   try {
-    const res = await axios.get(`https://api.roblox.com/users/get-by-username?username=${encodeURIComponent(username)}`);
-    return res.data.Id;
+    const res = await axios.post('https://users.roblox.com/v1/usernames/users', {
+      usernames: [username],
+      excludeBannedUsers: true
+    });
+    return res.data.data[0] ? res.data.data[0].id : null;
   } catch (e) {
     return null;
   }
@@ -18,8 +21,8 @@ async function getUserIdByUsername(username) {
 
 async function getUsernameById(userId) {
   try {
-    const res = await axios.get(`https://api.roblox.com/users/${userId}`);
-    return res.data.Username;
+    const res = await axios.get(`https://users.roblox.com/v1/users/${userId}`);
+    return res.data.name;
   } catch (e) {
     return null;
   }
@@ -35,7 +38,6 @@ async function getUserBio(userId) {
   }
 }
 
-// ... (diğer fonksiyonlar aynen)
 async function getUserGroups(userId) {
   try {
     const res = await axios.get(`https://groups.roblox.com/v2/users/${userId}/groups/roles`);
@@ -115,7 +117,7 @@ async function getGroupRoles(groupId) {
 module.exports = {
   getUserIdByUsername,
   getUsernameById,
-  getUserBio,           // YENİ
+  getUserBio,
   getUserGroups,
   getMemberRank,
   setRank,

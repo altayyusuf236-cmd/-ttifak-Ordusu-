@@ -6,11 +6,11 @@ const { logIslem } = require('../../services/logger');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('yetki-ver')
-    .setDescription('Kullanıcıya özel yetki verir')
+    .setName('yetki-al')
+    .setDescription('Kullanıcının özel yetkisini alır')
     .addUserOption(opt => opt.setName('kullanici').setDescription('Kullanıcı').setRequired(true))
     .addStringOption(opt => opt.setName('kamp-ismi').setDescription('Kamp adı').setRequired(true))
-    .addStringOption(opt => opt.setName('yetki').setDescription('Yetki türü').addChoices(
+    .addStringOption(opt => opt.setName('yetki').setDescription('Alınacak yetki türü').addChoices(
       { name: 'Admin', value: 'admin' },
       { name: 'Grup Sahibi', value: 'grup_sahibi' },
       { name: 'Tam Yasak', value: 'tam_yasak' },
@@ -22,7 +22,7 @@ module.exports = {
   async execute(interaction) {
     const user = interaction.options.getUser('kullanici');
     const kampIsmi = interaction.options.getString('kamp-ismi');
-    const istenenYetki = interaction.options.getString('yetki');
+    const alinacakYetki = interaction.options.getString('yetki');
     const executorId = interaction.user.id;
 
     const kamp = await Kamp.findOne({ isim: kampIsmi });
@@ -39,33 +39,37 @@ module.exports = {
         yetkiTuru: 'grup_sahibi'
       });
 
-      if (!executorYetkiliKaydi) {
+      if (!executorYetkiKaydi) {
         return interaction.reply({ content: '❌ Bu komutu bu kampta kullanmak için yetkiniz yok.', ephemeral: true });
       }
 
-      // 2. Grup Sahibi Sınırlandırması: Sadece kendi kampı için 'oyun_yasak' veya 'tam_yasak' verebilir
-      const grupSahibininVerebilecegiYetkiler = ['oyun_yasak', 'tam_yasak'];
-      if (!grupSahibininVerebilecegiYetkiler.includes(istenenYetki)) {
+      // 2. Grup Sahibi Sınırlandırması: Sadece kendi kampı için 'oyun_yasak' veya 'tam_yasak' yetkisini alabilir
+      const grupSahibininAlabilecegiYetkiler = ['oyun_yasak', 'tam_yasak'];
+      if (!grupSahibininAlabilecegiYetkiler.includes(alinacakYetki)) {
         return interaction.reply({ 
-          content: '❌ **Grup Sahibi** unvanıyla sadece **Oyun Yasak** ve **Tam Yasak** yetkilerini verebilirsiniz!', 
+          content: '❌ **Grup Sahibi** unvanıyla sadece **Oyun Yasak** ve **Tam Yasak** yetkilerini alabilirsiniz!', 
           ephemeral: true 
         });
       }
     }
 
-    // Yetkiyi veritabanına kaydet/güncelle[span_3](start_span)[span_3](end_span)
-    await Yetkili.findOneAndUpdate(
-      { userId: user.id, kampId: kamp._id },
-      { yetkiTuru: istenenYetki },
-      { upsert: true, new: true }
-    );
+    // Veritabanından belirtilen yetkiyi sil
+    const silinenKayit = await Yetkili.findOneAndDelete({
+      userId: user.id,
+      kampId: kamp._id,
+      yetkiTuru: alinacakYetki
+    });
 
-    await interaction.reply(`✅ ${user} için **${kampIsmi}** kampında **${istenenYetki}** yetkisi başarıyla verildi.`);[span_4](start_span)[span_4](end_span)
+    if (!silinenKayit) {
+      return interaction.reply({ content: `❌ Kullanıcıda zaten **${alinacakYetki}** yetkisi bulunmuyor.`, ephemeral: true });
+    }
 
-    await logIslem(interaction, 'yetki', 'Yetki verildi', {[span_5](start_span)[span_5](end_span)
-      Kullanıcı: user.tag,[span_6](start_span)[span_6](end_span)
-      Kamp: kampIsmi,[span_7](start_span)[span_7](end_span)
-      Yetki: istenenYetki[span_8](start_span)[span_8](end_span)
+    await interaction.reply(`✅ ${user} kullanıcısının **${kampIsmi}** kampındaki **${alinacakYetki}** yetkisi başarıyla alındı.`);
+
+    await logIslem(interaction, 'yetki', 'Yetki alındı', {
+      Kullanıcı: user.tag,
+      Kamp: kampIsmi,
+      Yetki: alinacakYetki
     });
   }
 };

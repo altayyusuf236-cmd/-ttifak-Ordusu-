@@ -83,6 +83,20 @@ async function ittifakYetkiKontrol(userId) {
     userId,
     $or: [{ yetkiTuru: 'ittifak_duyuru' }, { yetkiTuru: 'admin' }]
   });
+  
+  // Diğer komutlar (yasaklama vb.) için mevcut genel yetki kontrolü
+async function yetkiKontrol(userId, kampId, yetkiTuru) {
+  const yetkili = await Yetkili.findOne({
+    userId,
+    kampId,
+    $or: [
+      { yetkiTuru: yetkiTuru }, 
+      { yetkiTuru: 'admin' },
+      { yetkiTuru: 'grup_sahibi' } // Grup sahibi, tam yasak ve oyun yasak dahil tüm bu yetkilere otomatik sahip sayılır!
+    ]
+  });
+  return !!yetkili;
+}
 
   // 2. Özel 'DuyuruYetkili' şemasında ekli mi kontrol et
   const ozelDuyuruYetkilisi = await DuyuruYetkili.findOne({ userId });

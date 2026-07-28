@@ -34,7 +34,7 @@ module.exports = {
         const kanal = anaGuild.channels.cache.find(c => c.name === kanalAdi && c.isTextBased());
         if (kanal) {
           try {
-            await kanal.send(`📢 **${duyuru}**\n\n✍️ ${imza}`);
+            await kanal.send(`**${duyuru}**\n\n -# ${imza}`);
             basarili.push(`✅ ${anaGuild.name} (${kamp.isim})`);
           } catch (e) {
             basarisiz.push(`❌ ${anaGuild.name} (${kamp.isim}) - Mesaj gönderilemedi`);

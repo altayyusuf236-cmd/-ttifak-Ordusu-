@@ -3,7 +3,7 @@ const Kamp = require('../../models/Kamp');
 const Branş = require('../../models/Branş');
 const Kurum = require('../../models/Kurum');
 const Yasak = require('../../models/Yasak');
-const Yetki = require('../../models/Yetki');
+const Yetki = require('../../models/Yetkili');
 const kampBul = require('../../utils/kampBul');
 
 module.exports = {

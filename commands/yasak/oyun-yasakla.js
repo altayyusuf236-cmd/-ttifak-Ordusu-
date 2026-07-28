@@ -29,14 +29,20 @@ module.exports = {
     const userId = await getUserIdByUsername(kullaniciAdi);
     if (!userId) return interaction.editReply('❌ Roblox kullanıcısı bulunamadı.');
 
-    // Sadece veritabanına "oyun" yasağı olarak işliyoruz. Roblox oyunundaki script bu kaydı okuyup adamı kickleyecek.
     await Yasak.findOneAndUpdate(
       { userId: userId.toString(), kampId: kamp._id, tur: 'oyun' },
       { aktif: true, sebep: sebep, tarih: new Date() },
       { upsert: true, new: true }
     );
 
-    await interaction.editReply(`✅ **${kullaniciAdi}** (${userId}) veritabanında oyundan yasaklandı.\n*(Not: Roblox içindeki script bu veriyi okuduğunda kullanıcı oyuna giremeyecektir.)*`);
+    try {
+      const discordUser = interaction.client.users.cache.get(userId);
+      if (discordUser) {
+        await discordUser.send(`${interaction.user.tag} kişisi tarafından ${sebep} sebebiyle ${kamp.isim} Kampının oyunundan yasaklandınız`);
+      }
+    } catch (e) {}
+
+    await interaction.editReply(`✅ **${kullaniciAdi}** (${userId}) oyundan yasaklandı.)*`);
     
     await logIslem(interaction, 'yasak', 'Oyun yasak işlemi yapıldı', {
       'Roblox Adı': kullaniciAdi,

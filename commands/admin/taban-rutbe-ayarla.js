@@ -21,6 +21,7 @@ module.exports = {
 
     kamp.tabanRutbe = seviye;
     await kamp.save();
-    await interaction.reply(`✅ **${kamp.isim}** kampı için ana taban rütbe **${seviye}** olarak ayarlandı.`);
+    await interaction.reply(` **${kamp.isim}** kampı için ana taban rütbe **${seviye}** olarak ayarlandı.`);
   }
 };
+1

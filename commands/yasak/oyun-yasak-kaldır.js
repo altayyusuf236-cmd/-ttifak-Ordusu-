@@ -11,11 +11,13 @@ module.exports = {
     .setName('oyun-yasak-kaldır')
     .setDescription('Roblox oyun yasağını kaldırır')
     .addStringOption(opt => opt.setName('kullanici-adi').setDescription('Roblox kullanıcı adı').setRequired(true))
+    .addStringOption(opt => opt.setName('sebep').setDescription('Yasağın kaldırılma sebebi').setRequired(true))
     .addStringOption(opt => opt.setName('kamp-ismi').setDescription('Kamp adı (opsiyonel)')),
   async execute(interaction) {
     await interaction.reply('⏳ **Oyun yasak kaldırma işlemi başlatılıyor...**');
 
     const kullaniciAdi = interaction.options.getString('kullanici-adi');
+    const sebep = interaction.options.getString('sebep');
     const kampIsmi = interaction.options.getString('kamp-ismi');
     let kamp;
 
@@ -34,11 +36,20 @@ module.exports = {
     if (!userId) return interaction.editReply('❌ Roblox kullanıcısı bulunamadı.');
 
     await Yasak.updateOne({ userId: userId.toString(), kampId: kamp._id, tur: 'oyun' }, { aktif: false });
+
+    try {
+      const discordUser = interaction.client.users.cache.get(userId);
+      if (discordUser) {
+        await discordUser.send(`${interaction.user.tag} kişisi tarafından ${sebep} sebebiyle ${kamp.isim} Kampından oyun yasağınız kaldırıldı`);
+      }
+    } catch (e) {}
+
     await interaction.editReply(`✅ **${kullaniciAdi}** (${userId}) için oyun yasağı kaldırıldı. (Manuel olarak gruba tekrar eklemeniz gerekebilir.)`);
 
     await logIslem(interaction, 'yasak', 'Oyun yasak kaldırıldı', {
       'Roblox Adı': kullaniciAdi,
-      Kamp: kamp.isim
+      Kamp: kamp.isim,
+      Sebep: sebep
     });
   }
 };

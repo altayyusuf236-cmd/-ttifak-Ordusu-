@@ -36,7 +36,7 @@ module.exports = {
       }
 
       await setRank(kamp.oyunGrubuId, hedefRobloxId, oncekiRol.rank);
-      await interaction.editReply(`✅ **${kullaniciAdi}** tenzil edildi. Yeni Rütbe: **${oncekiRol.name}**`);
+      await interaction.editReply(` **${kullaniciAdi}** tenzil edildi. Yeni Rütbe: **${oncekiRol.name}**`);
       log('BILGI', 'Ana kamp tenzil', { yetkili: interaction.user.tag, hedef: kullaniciAdi, yeniRutbe: oncekiRol.name });
     } catch (err) {
       await interaction.editReply(`❌ Tenzil başarısız oldu.`);

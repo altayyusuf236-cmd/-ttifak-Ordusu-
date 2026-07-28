@@ -3,25 +3,23 @@ const Kamp = require('../../models/Kamp');
 const Branş = require('../../models/Branş');
 const Yasak = require('../../models/Yasak');
 const { ittifakYetkiKontrol } = require('../../utils/yetki');
-const { logIslem } = require('../../services/logger');
+
+const delay = ms => new Promise(res => setTimeout(res, ms));
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('ittifak-tam-yasak-kaldır')
+    .setName('ittifak-tam-yasak-kaldir')
     .setDescription('İttifak tam yasağı kaldırır')
     .addUserOption(opt => opt.setName('kullanici').setDescription('Kullanıcı').setRequired(true)),
   async execute(interaction) {
     await interaction.reply('⏳ **İttifak tam yasak kaldırma işlemi başlatılıyor...**');
-
     const user = interaction.options.getUser('kullanici');
 
     if (!await ittifakYetkiKontrol(interaction.user.id, 'ittifak_yasak')) {
-      return interaction.editReply('❌ Bu işlem için İttifak Tam Yasak yetkiniz yok.');
+      return interaction.editReply('❌ Bu işlem için yetkiniz yok.');
     }
 
     const kamplar = await Kamp.find();
-    if (!kamplar.length) return interaction.editReply('❌ Hiç kamp bulunamadı.');
-
     const basarili = [];
     const basarisiz = [];
 
@@ -30,12 +28,11 @@ module.exports = {
       if (anaGuild) {
         try {
           await anaGuild.members.unban(user.id);
-          basarili.push(`✅ ${anaGuild.name} (${kamp.isim})`);
+          basarili.push(`✅ ${anaGuild.name}`);
+          await delay(1000);
         } catch (e) {
-          basarisiz.push(`❌ ${anaGuild.name} (${kamp.isim}) - Yetki yok`);
+          basarisiz.push(`❌ ${anaGuild.name}`);
         }
-      } else {
-        basarisiz.push(`❌ ${kamp.isim} ana sunucusu bulunamadı`);
       }
 
       const branşlar = await Branş.find({ kampId: kamp._id });
@@ -44,25 +41,16 @@ module.exports = {
         if (guild) {
           try {
             await guild.members.unban(user.id);
-            basarili.push(`✅ ${guild.name} (${kamp.isim} - ${b.isim})`);
+            basarili.push(`✅ ${guild.name} (${b.isim})`);
+            await delay(1000);
           } catch (e) {
-            basarisiz.push(`❌ ${guild.name} (${kamp.isim} - ${b.isim}) - Yetki yok`);
+            basarisiz.push(`❌ ${guild.name} (${b.isim})`);
           }
-        } else {
-          basarisiz.push(`❌ ${kamp.isim} - ${b.isim} sunucusu bulunamadı`);
         }
       }
-
       await Yasak.updateOne({ userId: user.id, kampId: kamp._id, tur: 'ittifak' }, { aktif: false });
     }
 
-    const mesaj = `✅ **${user.tag}** için ittifak tam yasağı kaldırıldı.\n\n**Başarılı:**\n${basarili.join('\n') || 'Yok'}\n\n**Başarısız:**\n${basarisiz.join('\n') || 'Yok'}`;
-    await interaction.editReply(mesaj);
-
-    await logIslem(interaction, 'yasak', 'İttifak tam yasak kaldırıldı', {
-      Kullanıcı: user.tag,
-      'Başarılı Sunucu': basarili.length,
-      'Başarısız Sunucu': basarisiz.length
-    });
+    await interaction.editReply(`✅ **${user.tag}** için ittifak yasağı kaldırıldı.`);
   }
 };

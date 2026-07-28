@@ -1,5 +1,6 @@
 const Yetkili = require('../models/Yetkili');
 const Kullanici = require('../models/Kullanici');
+const { getMemberRank } = require('../services/roblox');
 
 async function yetkiKontrol(userId, kampId, yetkiTuru) {
   const yetkili = await Yetkili.findOne({
@@ -10,22 +11,12 @@ async function yetkiKontrol(userId, kampId, yetkiTuru) {
   return !!yetkili;
 }
 
-async function adminKontrol(userId, kampId) {
-  const yetkili = await Yetkili.findOne({ userId, kampId, yetkiTuru: 'admin' });
-  return !!yetkili;
-}
-
-async function ittifakYetkiKontrol(userId, yetkiTuru) {
-  const yetkili = await Yetkili.findOne({ userId, yetkiTuru: yetkiTuru });
-  return !!yetkili;
-}
-
 function isOwner(userId) {
   return userId === process.env.OWNER_ID;
 }
 
-// Rütbe yetki kontrolü – doğrulama kontrolü dahil
-async function rutbeYetkiKontrol(userId, kampId, hedefRobloxId, islemTuru) {
+// Gelişmiş Rütbe Yetki Kontrolü (Ana Kamp ve Branş Uyumlu)
+async function rutbeYetkiKontrol(userId, kampId, bransId = null, hedefRobloxId, islemTuru) {
   const yetkili = await Yetkili.findOne({
     userId,
     kampId,
@@ -34,25 +25,37 @@ async function rutbeYetkiKontrol(userId, kampId, hedefRobloxId, islemTuru) {
   if (!yetkili) return { yetkili: false, mesaj: 'Rütbe yetkiniz yok.' };
 
   const Kamp = require('../models/Kamp');
+  const Branş = require('../models/Branş');
+  
   const kamp = await Kamp.findById(kampId);
   if (!kamp) return { yetkili: false, mesaj: 'Kamp bulunamadı.' };
 
-  // 🔐 DOĞRULAMA KONTROLÜ
+  let hedefGrupId = kamp.oyunGrubuId;
+  let tabanRutbe = kamp.tabanRutbe || 0;
+  let maxRutbe = kamp.maxRutbe || 255;
+
+  if (bransId) {
+    const brans = await Branş.findById(bransId);
+    if (!brans) return { yetkili: false, mesaj: 'Branş bulunamadı.' };
+    if (brans.oyunGrubuId) hedefGrupId = brans.oyunGrubuId;
+    if (brans.tabanRutbe !== undefined) tabanRutbe = brans.tabanRutbe;
+    if (brans.maxRutbe !== undefined) maxRutbe = brans.maxRutbe;
+  }
+
   const kullanici = await Kullanici.findOne({ discordId: userId });
   if (!kullanici || !kullanici.dogrulandi) {
     return { yetkili: false, mesaj: 'Önce Roblox hesabınızı doğrulayın (`/doğrula`).' };
   }
 
-  const { getMemberRank } = require('../services/roblox');
-  const yetkiliRank = await getMemberRank(kamp.oyunGrubuId, kullanici.robloxId);
-  if (yetkiliRank === null) return { yetkili: false, mesaj: 'Yetkili bu grupta değil.' };
+  const yetkiliRank = await getMemberRank(hedefGrupId, kullanici.robloxId);
+  if (yetkiliRank === null) return { yetkili: false, mesaj: 'Yetkili bu grupta bulunmuyor.' };
 
-  if (yetkiliRank <= kamp.tabanRutbe) {
-    return { yetkili: false, mesaj: `Yetkiniz taban rütbenin (${kamp.tabanRutbe}) altında.` };
+  if (yetkiliRank <= tabanRutbe) {
+    return { yetkili: false, mesaj: `Yetkiniz bu grubun taban rütbesinin (${tabanRutbe}) altında veya eşit.` };
   }
 
-  const hedefRank = await getMemberRank(kamp.oyunGrubuId, hedefRobloxId);
-  if (hedefRank === null) return { yetkili: false, mesaj: 'Hedef kullanıcı bu grupta değil.' };
+  const hedefRank = await getMemberRank(hedefGrupId, hedefRobloxId);
+  if (hedefRank === null) return { yetkili: false, mesaj: 'Hedef kullanıcı bu grupta bulunmuyor.' };
 
   if (yetkiliRank <= hedefRank) {
     return { yetkili: false, mesaj: `Hedef kullanıcı (rütbe ${hedefRank}) sizden (rütbe ${yetkiliRank}) düşük veya eşit rütbede.` };
@@ -61,11 +64,11 @@ async function rutbeYetkiKontrol(userId, kampId, hedefRobloxId, islemTuru) {
   if (islemTuru === 'terfi' && hedefRank >= yetkiliRank - 1) {
     return { yetkili: false, mesaj: 'Hedef zaten sizin altınızda en yüksek rütbede.' };
   }
-  if (islemTuru === 'tenzil' && hedefRank <= kamp.tabanRutbe) {
+  if (islemTuru === 'tenzil' && hedefRank <= tabanRutbe) {
     return { yetkili: false, mesaj: 'Hedef zaten taban rütbede, daha düşük verilemez.' };
   }
 
-  return { yetkili: true, yetkiliRank, hedefRank };
+  return { yetkili: true, yetkiliRank, hedefRank, hedefGrupId, maxRutbe, tabanRutbe };
 }
 
-module.exports = { yetkiKontrol, adminKontrol, ittifakYetkiKontrol, isOwner, rutbeYetkiKontrol };
+module.exports = { yetkiKontrol, isOwner, rutbeYetkiKontrol };

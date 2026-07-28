@@ -5,6 +5,8 @@ const Yasak = require('../../models/Yasak');
 const { ittifakYetkiKontrol } = require('../../utils/yetki');
 const { logIslem } = require('../../services/logger');
 
+const delay = ms => new Promise(res => setTimeout(res, ms));
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('ittifak-tam-yasakla')
@@ -30,12 +32,11 @@ module.exports = {
       if (anaGuild) {
         try {
           await anaGuild.members.ban(user.id, { reason: 'İttifak tam yasak' });
-          basarili.push(`✅ ${anaGuild.name} (${kamp.isim} - Ana)`);
+          basarili.push(`✅ ${anaGuild.name} (Ana)`);
+          await delay(1000); // Rate limit koruması
         } catch (e) {
-          basarisiz.push(`❌ ${anaGuild.name} (${kamp.isim} - Yetki yok)`);
+          basarisiz.push(`❌ ${anaGuild.name} (Yetki yok)`);
         }
-      } else {
-        basarisiz.push(`❌ ${kamp.isim} ana sunucusu bulunamadı`);
       }
 
       const branşlar = await Branş.find({ kampId: kamp._id });
@@ -44,25 +45,22 @@ module.exports = {
         if (guild) {
           try {
             await guild.members.ban(user.id, { reason: 'İttifak tam yasak' });
-            basarili.push(`✅ ${guild.name} (${kamp.isim} - ${b.isim})`);
+            basarili.push(`✅ ${guild.name} (${b.isim})`);
+            await delay(1000);
           } catch (e) {
-            basarisiz.push(`❌ ${guild.name} (${kamp.isim} - ${b.isim}) - Yetki yok`);
+            basarisiz.push(`❌ ${guild.name} (${b.isim}) - Yetki yok`);
           }
-        } else {
-          basarisiz.push(`❌ ${kamp.isim} - ${b.isim} sunucusu bulunamadı`);
         }
       }
 
-      await Yasak.create({ userId: user.id, kampId: kamp._id, tur: 'ittifak' });
+      await Yasak.findOneAndUpdate(
+        { userId: user.id, kampId: kamp._id, tur: 'ittifak' },
+        { aktif: true },
+        { upsert: true }
+      );
     }
 
     const mesaj = `✅ **${user.tag}** tüm ittifak kamplarından yasaklandı.\n\n**Başarılı:**\n${basarili.join('\n') || 'Yok'}\n\n**Başarısız:**\n${basarisiz.join('\n') || 'Yok'}`;
     await interaction.editReply(mesaj);
-
-    await logIslem(interaction, 'yasak', 'İttifak tam yasak yapıldı', {
-      Kullanıcı: user.tag,
-      'Başarılı Sunucu': basarili.length,
-      'Başarısız Sunucu': basarisiz.length
-    });
   }
 };

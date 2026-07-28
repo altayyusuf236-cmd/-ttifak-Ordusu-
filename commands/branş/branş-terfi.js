@@ -1,53 +1,52 @@
 const { SlashCommandBuilder } = require('discord.js');
 const Branş = require('../../models/Branş');
-const Kamp = require('../../models/Kamp');
 const { rutbeYetkiKontrol } = require('../../utils/yetki');
-const { getUserIdByUsername, getMemberRank, setRank } = require('../../services/roblox');
-const { logIslem } = require('../../services/logger');
+const kampBul = require('../../utils/kampBul');
+const { getUserIdByUsername, setRank, getGroupRoles, getMemberRank } = require('../../services/roblox');
+const { log } = require('../../utils/logger');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('branş-terfi')
-    .setDescription('Branş içinde 1 rütbe terfi ettirir (Roblox ismi ile)')
+    .setName('brans-rutbe-terfi')
+    .setDescription('Seçilen branş grubunda kullanıcıyı 1 rütbe terfi ettirir')
     .addStringOption(opt => opt.setName('kullanici-adi').setDescription('Roblox kullanıcı adı').setRequired(true))
-    .addStringOption(opt => opt.setName('branş-ismi').setDescription('Branş adı').setRequired(true)),
+    .addStringOption(opt => opt.setName('brans-ismi').setDescription('Branş adı').setRequired(true)),
+
   async execute(interaction) {
     await interaction.reply('⏳ **Branş terfi işlemi başlatılıyor...**');
 
     const kullaniciAdi = interaction.options.getString('kullanici-adi');
-    const branşIsmi = interaction.options.getString('branş-ismi');
+    const bransIsmi = interaction.options.getString('brans-ismi');
 
-    const branş = await Branş.findOne({ isim: branşIsmi });
-    if (!branş) return interaction.editReply('❌ Branş bulunamadı.');
+    const kamp = await kampBul(interaction.guildId);
+    if (!kamp) return interaction.editReply('❌ Bu sunucu bir kampa bağlı değil.');
 
-    const kamp = await Kamp.findById(branş.kampId);
-    if (!kamp) return interaction.editReply('❌ Kamp bulunamadı.');
+    const brans = await Branş.findOne({ isim: bransIsmi, kampId: kamp._id });
+    if (!brans || !brans.oyunGrubuId) return interaction.editReply('❌ Branş veya branş grup ID\'si bulunamadı.');
 
     const hedefRobloxId = await getUserIdByUsername(kullaniciAdi);
     if (!hedefRobloxId) return interaction.editReply('❌ Roblox kullanıcısı bulunamadı.');
 
-    const yetkiSonuc = await rutbeYetkiKontrol(interaction.user.id, kamp._id, hedefRobloxId, 'terfi');
-    if (!yetkiSonuc.yetkili) {
-      return interaction.editReply(`❌ ${yetkiSonuc.mesaj}`);
-    }
+    const yetkiSonuc = await rutbeYetkiKontrol(interaction.user.id, kamp._id, brans._id, hedefRobloxId, 'terfi');
+    if (!yetkiSonuc.yetkili) return interaction.editReply(`❌ ${yetkiSonuc.mesaj}`);
 
-    const mevcutRank = await getMemberRank(kamp.oyunGrubuId, hedefRobloxId);
-    if (mevcutRank === null) return interaction.editReply('❌ Kullanıcı bu grupta değil.');
+    try {
+      const hedefMevcutRank = await getMemberRank(brans.oyunGrubuId, hedefRobloxId);
+      const roller = await getGroupRoles(brans.oyunGrubuId);
+      const siraliRoller = roller.filter(r => r.rank > 0).sort((a, b) => a.rank - b.rank);
+      
+      const sonrakiRol = siraliRoller.find(r => r.rank > hedefMevcutRank);
+      if (!sonrakiRol) return interaction.editReply('❌ Kullanıcı bu branşta zaten en yüksek rütbede.');
 
-    const yeniRank = mevcutRank + 1;
-    const basarili = await setRank(kamp.oyunGrubuId, hedefRobloxId, yeniRank);
+      if (sonrakiRol.rank > (brans.maxRutbe || 255)) {
+        return interaction.editReply(`❌ Gruptaki max rütbe sınırı (${brans.maxRutbe}) aşılıyor.`);
+      }
 
-    if (basarili) {
-      await interaction.editReply(`✅ **${kullaniciAdi}** kullanıcısı **${branşIsmi}** branşında **${mevcutRank}** rütbesinden **${yeniRank}** rütbesine terfi ettirildi.`);
-      await logIslem(interaction, 'branş', 'Branş terfi işlemi yapıldı', {
-        'Roblox Adı': kullaniciAdi,
-        Branş: branşIsmi,
-        Kamp: kamp.isim,
-        'Eski Rütbe': mevcutRank,
-        'Yeni Rütbe': yeniRank
-      });
-    } else {
-      await interaction.editReply(`❌ Terfi işlemi başarısız.`);
+      await setRank(brans.oyunGrubuId, hedefRobloxId, sonrakiRol.rank);
+      await interaction.editReply(`✅ **${kullaniciAdi}** başarıyla terfi ettirildi. Yeni Rütbe: **${sonrakiRol.name}**`);
+      log('BILGI', 'Branş terfi edildi', { yetkili: interaction.user.tag, hedef: kullaniciAdi, brans: brans.isim, yeniRutbe: sonrakiRol.name });
+    } catch (err) {
+      await interaction.editReply('❌ Terfi işlemi başarısız oldu.');
     }
   }
 };

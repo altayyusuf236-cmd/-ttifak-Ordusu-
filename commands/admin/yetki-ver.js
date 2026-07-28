@@ -28,11 +28,9 @@ module.exports = {
     const kamp = await Kamp.findOne({ isim: kampIsmi });
     if (!kamp) return interaction.reply({ content: '❌ Kamp bulunamadı.', ephemeral: true });
 
-    // 1. Bot Sahibi Kontrolü
     const ownerMi = isOwner(executorId);
 
     if (!ownerMi) {
-      // Komutu kullanan kişi bot sahibi değilse, bu kampta 'grup_sahibi' yetkisine sahip mi kontrol et
       const executorYetkiKaydi = await Yetkili.findOne({
         userId: executorId,
         kampId: kamp._id,
@@ -43,7 +41,6 @@ module.exports = {
         return interaction.reply({ content: '❌ Bu komutu bu kampta kullanmak için yetkiniz yok.', ephemeral: true });
       }
 
-      // 2. Grup Sahibi Sınırlandırması: Sadece 'oyun_yasak' veya 'tam_yasak' verebilir
       const grupSahibininVerebilecegiYetkiler = ['oyun_yasak', 'tam_yasak'];
       if (!grupSahibininVerebilecegiYetkiler.includes(istenenYetki)) {
         return interaction.reply({ 
@@ -53,19 +50,18 @@ module.exports = {
       }
     }
 
-    // Yetkiyi veritabanına kaydet/güncelle[span_1](start_span)[span_1](end_span)
     await Yetkili.findOneAndUpdate(
       { userId: user.id, kampId: kamp._id },
       { yetkiTuru: istenenYetki },
       { upsert: true, new: true }
     );
 
-    await interaction.reply(`✅ ${user} için **${kampIsmi}** kampında **${istenenYetki}** yetkisi başarıyla verildi.`);[span_2](start_span)[span_2](end_span)
+    await interaction.reply(`✅ ${user} için **${kampIsmi}** kampında **${istenenYetki}** yetkisi başarıyla verildi.`);
 
     await logIslem(interaction, 'yetki', 'Yetki verildi', {
-      Kullanıcı: user.tag,[span_3](start_span)[span_3](end_span)
-      Kamp: kampIsmi,[span_4](start_span)[span_4](end_span)
-      Yetki: istenenYetki[span_5](start_span)[span_5](end_span)
+      Kullanıcı: user.tag,
+      Kamp: kampIsmi,
+      Yetki: istenenYetki
     });
   }
 };

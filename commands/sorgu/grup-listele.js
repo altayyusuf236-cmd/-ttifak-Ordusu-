@@ -26,7 +26,7 @@ module.exports = {
 
       return new EmbedBuilder()
         .setColor(0x00ff88)
-        .setTitle(`${kullaniciAdi} (${userId}) - Gruplar`)
+        .setTitle(`📋 ${kullaniciAdi} (${userId}) - Gruplar`)
         .setDescription(currentGroups.map(g =>
           `**${g.groupName}** (ID: ${g.groupId})\nRol: ${g.roleName} (Seviye: ${g.roleRank})`
         ).join('\n\n'))
@@ -59,7 +59,7 @@ module.exports = {
 
     const collector = initialMessage.createMessageComponentCollector({ time: 60000 });
 
-    collector.on('collect, async i => {
+    collector.on('collect', async i => {
       if (i.user.id !== interaction.user.id) {
         return i.reply({ content: 'Bu butonları sadece komutu kullanan kişi yönetebilir!', ephemeral: true });
       }

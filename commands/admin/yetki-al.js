@@ -28,11 +28,9 @@ module.exports = {
     const kamp = await Kamp.findOne({ isim: kampIsmi });
     if (!kamp) return interaction.reply({ content: '❌ Kamp bulunamadı.', ephemeral: true });
 
-    // 1. Bot Sahibi Kontrolü (Değilse "Grup Sahibi" yetkisi var mı diye bakacağız)
     const ownerMi = isOwner(executorId);
 
     if (!ownerMi) {
-      // Komutu kullanan kişi bot sahibi değilse, bu kampta 'grup_sahibi' yetkisine sahip mi kontrol et
       const executorYetkiKaydi = await Yetkili.findOne({
         userId: executorId,
         kampId: kamp._id,
@@ -43,7 +41,6 @@ module.exports = {
         return interaction.reply({ content: '❌ Bu komutu bu kampta kullanmak için yetkiniz yok.', ephemeral: true });
       }
 
-      // 2. Grup Sahibi Sınırlandırması: Sadece kendi kampı için 'oyun_yasak' veya 'tam_yasak' yetkisini alabilir
       const grupSahibininAlabilecegiYetkiler = ['oyun_yasak', 'tam_yasak'];
       if (!grupSahibininAlabilecegiYetkiler.includes(alinacakYetki)) {
         return interaction.reply({ 
@@ -53,7 +50,6 @@ module.exports = {
       }
     }
 
-    // Veritabanından belirtilen yetkiyi sil
     const silinenKayit = await Yetkili.findOneAndDelete({
       userId: user.id,
       kampId: kamp._id,

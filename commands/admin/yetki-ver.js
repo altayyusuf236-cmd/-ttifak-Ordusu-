@@ -28,7 +28,7 @@ module.exports = {
     const kamp = await Kamp.findOne({ isim: kampIsmi });
     if (!kamp) return interaction.reply({ content: '❌ Kamp bulunamadı.', ephemeral: true });
 
-    // 1. Bot Sahibi Kontrolü (Değilse "Grup Sahibi" yetkisi var mı diye bakacağız)
+    // 1. Bot Sahibi Kontrolü
     const ownerMi = isOwner(executorId);
 
     if (!ownerMi) {
@@ -39,11 +39,11 @@ module.exports = {
         yetkiTuru: 'grup_sahibi'
       });
 
-      if (!executorYetkiliKaydi) {
+      if (!executorYetkiKaydi) {
         return interaction.reply({ content: '❌ Bu komutu bu kampta kullanmak için yetkiniz yok.', ephemeral: true });
       }
 
-      // 2. Grup Sahibi Sınırlandırması: Sadece kendi kampı için 'oyun_yasak' veya 'tam_yasak' verebilir
+      // 2. Grup Sahibi Sınırlandırması: Sadece 'oyun_yasak' veya 'tam_yasak' verebilir
       const grupSahibininVerebilecegiYetkiler = ['oyun_yasak', 'tam_yasak'];
       if (!grupSahibininVerebilecegiYetkiler.includes(istenenYetki)) {
         return interaction.reply({ 
@@ -53,19 +53,19 @@ module.exports = {
       }
     }
 
-    // Yetkiyi veritabanına kaydet/güncelle[span_3](start_span)[span_3](end_span)
+    // Yetkiyi veritabanına kaydet/güncelle[span_1](start_span)[span_1](end_span)
     await Yetkili.findOneAndUpdate(
       { userId: user.id, kampId: kamp._id },
       { yetkiTuru: istenenYetki },
       { upsert: true, new: true }
     );
 
-    await interaction.reply(`✅ ${user} için **${kampIsmi}** kampında **${istenenYetki}** yetkisi başarıyla verildi.`);[span_4](start_span)[span_4](end_span)
+    await interaction.reply(`✅ ${user} için **${kampIsmi}** kampında **${istenenYetki}** yetkisi başarıyla verildi.`);[span_2](start_span)[span_2](end_span)
 
-    await logIslem(interaction, 'yetki', 'Yetki verildi', {[span_5](start_span)[span_5](end_span)
-      Kullanıcı: user.tag,[span_6](start_span)[span_6](end_span)
-      Kamp: kampIsmi,[span_7](start_span)[span_7](end_span)
-      Yetki: istenenYetki[span_8](start_span)[span_8](end_span)
+    await logIslem(interaction, 'yetki', 'Yetki verildi', {
+      Kullanıcı: user.tag,[span_3](start_span)[span_3](end_span)
+      Kamp: kampIsmi,[span_4](start_span)[span_4](end_span)
+      Yetki: istenenYetki[span_5](start_span)[span_5](end_span)
     });
   }
 };

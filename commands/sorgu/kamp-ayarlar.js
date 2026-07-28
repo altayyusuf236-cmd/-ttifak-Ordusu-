@@ -8,10 +8,10 @@ const kampBul = require('../../utils/kampBul');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('kamp-ayarlar')
-    .setDescription('Kampın aktif tüm ayarlarını, branşlarını, kurumlarını, grup linklerini ve detaylı istatistiklerini gösterir')
+    .setDescription('Kampın ayarlarını ve istatistiklerini gösterir.')
     .addStringOption(opt => 
       opt.setName('kamp-ismi')
-        .setDescription('Kamp adı (opsiyonel - yazılmazsa bulunduğunuz sunucunun kampını gösterir)')
+        .setDescription('Kamp adı (opsiyonel)')
         .setRequired(false)
     ),
   async execute(interaction) {
@@ -26,7 +26,6 @@ module.exports = {
     const branşlar = await Branş.find({ kampId: kamp._id });
     const kurumlar = await Kurum.find({ kampId: kamp._id });
     
-    // Detaylı yasak istatistikleri
     const aktifYasakSayisi = await Yasak.countDocuments({ kampId: kamp._id, aktif: true });
     const tamYasakSayisi = await Yasak.countDocuments({ kampId: kamp._id, aktif: true, tur: 'tam' });
     const oyunYasakSayisi = await Yasak.countDocuments({ kampId: kamp._id, aktif: true, tur: 'oyun' });

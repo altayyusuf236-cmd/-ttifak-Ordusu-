@@ -3,12 +3,13 @@ const Kamp = require('../../models/Kamp');
 const Branş = require('../../models/Branş');
 const Kurum = require('../../models/Kurum');
 const Yasak = require('../../models/Yasak');
+const Yetki = require('../../models/Yetki');
 const kampBul = require('../../utils/kampBul');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('kamp-ayarlar')
-    .setDescription('Kampın ayarlarını ve istatistiklerini gösterir.')
+    .setDescription('Kampın ayarlarını, log durumunu, yetkililerini ve istatistiklerini gösterir.')
     .addStringOption(opt => 
       opt.setName('kamp-ismi')
         .setDescription('Kamp adı (opsiyonel)')
@@ -26,11 +27,20 @@ module.exports = {
     const branşlar = await Branş.find({ kampId: kamp._id });
     const kurumlar = await Kurum.find({ kampId: kamp._id });
     
+    // Yasak istatistikleri
     const aktifYasakSayisi = await Yasak.countDocuments({ kampId: kamp._id, aktif: true });
     const tamYasakSayisi = await Yasak.countDocuments({ kampId: kamp._id, aktif: true, tur: 'tam' });
     const oyunYasakSayisi = await Yasak.countDocuments({ kampId: kamp._id, aktif: true, tur: 'oyun' });
     const ittifakYasakSayisi = await Yasak.countDocuments({ kampId: kamp._id, aktif: true, tur: 'ittifak' });
     const toplamKayitSayisi = await Yasak.countDocuments({ kampId: kamp._id });
+
+    // Yetkili istatistikleri
+    const tamYasakYetkiliSayisi = await Yetki.countDocuments({ kampId: kamp._id, 'yetkiler.tam_yasak': true });
+    const oyunYasakYetkiliSayisi = await Yetki.countDocuments({ kampId: kamp._id, 'yetkiler.oyun_yasak': true });
+    const toplamYetkiliSayisi = await Yetki.countDocuments({ kampId: kamp._id });
+
+    // Log Kanalı Durumu
+    const logKanalBilgi = kamp.logKanalId ? `<#${kamp.logKanalId}> (\`${kamp.logKanalId}\`)` : 'Ayarlandı/Tanımlı Değil';
 
     const anaGrupLink = kamp.robloxGrupId 
       ? `[Roblox Grubu](https://www.roblox.com/groups/${kamp.robloxGrupId})` 
@@ -39,11 +49,11 @@ module.exports = {
     const embed = new EmbedBuilder()
       .setColor(0x5865F2)
       .setTitle(`${kamp.isim} - Kamp Sistem Paneli`)
-      .setDescription(`Bu panel ${kamp.isim} kampına ait tüm aktif yapılandırmaları, bağlı sunucuları, Roblox grup bağlantılarını ve detaylı sistem istatistiklerini listeler.`)
+      .setDescription(`Bu panel ${kamp.isim} kampına ait tüm aktif yapılandırmaları, bağlı sunucuları, Roblox grup bağlantılarını, log durumunu ve yetkili/yasak istatistiklerini listeler.`)
       .addFields(
         {
-          name: 'Ana Sunucu Bilgisi',
-          value: anaGuild ? `**${anaGuild.name}**\nSunucu ID: \`${kamp.anaSunucuId}\`\nGrup: ${anaGrupLink}` : `Sunucuya ulaşılamıyor (\`${kamp.anaSunucuId}\`)`,
+          name: 'Ana Sunucu ve Log Bilgisi',
+          value: anaGuild ? `**${anaGuild.name}**\nSunucu ID: \`${kamp.anaSunucuId}\`\nGrup: ${anaGrupLink}\nLog Kanalı: ${logKanalBilgi}` : `Sunucuya ulaşılamıyor (\`${kamp.anaSunucuId}\`)`,
           inline: false
         },
         {
@@ -68,6 +78,11 @@ module.exports = {
               : '';
             return `• **${k.isim}** — ${sunucuAdi} (\`${k.discordSunucuId}\`)${grupLink}`;
           }).join('\n') : 'Bu kampa bağlı hiç kurum eklenmemiş',
+          inline: false
+        },
+        {
+          name: 'Yetkili İstatistikleri',
+          value: `Toplam Yetkili Kaydı: **${toplamYetkiliSayisi}**\n- Tam Yasak Yetkilisi: **${tamYasakYetkiliSayisi}**\n- Oyun Yasak Yetkilisi: **${oyunYasakYetkiliSayisi}**`,
           inline: false
         },
         {

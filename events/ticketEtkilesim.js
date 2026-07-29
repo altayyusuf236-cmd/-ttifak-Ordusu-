@@ -125,7 +125,7 @@ module.exports = {
               .setTitle('Bilet Kapatıldı')
               .addFields(
                 { name: 'Bilet Sahibi', value: `<@${bilet.sahipId}>`, inline: true },
-                Hatalar => { name: 'İşlemi Yapan Yetkili', value: `<@${interaction.user.id}>`, inline: true },
+                { name: 'İşlemi Yapan Yetkili', value: `<@${interaction.user.id}>`, inline: true },
                 { name: 'Üstlenen Yetkili', value: ustlenenKisi, inline: true },
                 { name: 'Konu', value: bilet.konuTuru || 'Bilinmiyor', inline: true }
               )

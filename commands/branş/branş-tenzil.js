@@ -45,7 +45,7 @@ module.exports = {
       }
 
       await setRank(brans.oyunGrubuId, hedefRobloxId, oncekiRol.rank);
-      await interaction.editReply(`✅ **${kullaniciAdi}** tenzil edildi.\n🔻 **Yeni Rütbe:** ${oncekiRol.name}\n📝 **Sebep:** ${sebep}`);
+      await interaction.editReply(` **${kullaniciAdi}** tenzil edildi.\n **Yeni Rütbe:** ${oncekiRol.name}\n **Sebep:** ${sebep}`);
       
       log('BILGI', 'Branş tenzil edildi', { 
         yetkili: interaction.user.tag, 

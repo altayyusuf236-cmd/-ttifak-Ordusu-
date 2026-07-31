@@ -1,5 +1,7 @@
 const axios = require('axios');
 
+let csrfToken = '';
+
 // Cookie gerektiren yazma (Rank değiştirme / Ban) işlemleri için Axios client'ı
 const robloxClient = axios.create({
   baseURL: 'https://groups.roblox.com/v1',
@@ -8,6 +10,28 @@ const robloxClient = axios.create({
     'Content-Type': 'application/json'
   }
 });
+
+// Otomatik X-CSRF-TOKEN (XSRF) yakalama ve istek tekrarı mekanizması
+robloxClient.interceptors.request.use(config => {
+  if (csrfToken) {
+    config.headers['X-CSRF-TOKEN'] = csrfToken;
+  }
+  return config;
+});
+
+robloxClient.interceptors.response.use(
+  response => response,
+  async error => {
+    const { config, response } = error;
+    // Roblox 403 verdiğinde yanıtın header kısmında yeni X-CSRF-TOKEN gönderir
+    if (response && response.status === 403 && response.headers['x-csrf-token']) {
+      csrfToken = response.headers['x-csrf-token'];
+      config.headers['X-CSRF-TOKEN'] = csrfToken;
+      return robloxClient(config); // İsteği yeni token ile otomatik tekrar dener
+    }
+    return Promise.reject(error);
+  }
+);
 
 /**
  * Roblox kullanıcı adından Roblox ID bulur
@@ -39,7 +63,7 @@ async function getUsernameById(userId) {
 }
 
 /**
- * Kullanıcının Roblox profilindeki "Hakkında (About)" metnini getirir (Doğrulama için)
+ * Kullanıcının Roblox profilindeki "Hakkında (About)" metnini getirir
  */
 async function getUserBio(userId) {
   try {
@@ -91,7 +115,7 @@ async function getMemberRank(groupId, userId) {
 }
 
 /**
- * Grubun tüm rütbelerini/rollerini getirir (Cookie gerektirmez)
+ * Grubun tüm rütbelerini/rollerini getirir
  */
 async function getGroupRoles(groupId) {
   try {
@@ -104,7 +128,7 @@ async function getGroupRoles(groupId) {
 }
 
 /**
- * Kullanıcının gruptaki rütbesini değiştirir (Cookie GEREKTİRİR)
+ * Kullanıcının gruptaki rütbesini değiştirir
  */
 async function setRank(groupId, userId, rankLevel) {
   try {
@@ -140,7 +164,7 @@ async function getRankLevelByName(groupId, rankName) {
 }
 
 /**
- * Kullanıcıyı gruptan sürgün eder / atar (Cookie GEREKTİRİR)
+ * Kullanıcıyı gruptan sürgün eder / atar
  */
 async function banFromGroup(groupId, userId) {
   try {

@@ -39,7 +39,7 @@ module.exports = {
         log('BİLGİ', `Kullanıcı branşta değildi`, { yetkili: interaction.user.id, hedef: user.id, branş: branşIsmi });
         return;
       }
-      await interaction.reply(`✅ ${user} **${branşIsmi}** branşından atıldı.\n📝 **Sebep:** ${sebep}`);
+      await interaction.reply(`${user} **${branşIsmi}** branşından atıldı.\n **Sebep:** ${sebep}`);
       
       log('BİLGİ', `Kullanıcı branştan atıldı`, {
         yetkili: interaction.user.tag || interaction.user.id,

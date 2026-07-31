@@ -38,7 +38,7 @@ module.exports = {
         { userId: user.id, branşId: branş._id },
         { upsert: true, new: true }
       );
-      await interaction.reply(`✅ ${user} **${branşIsmi}** branşına alındı.\n📝 **Sebep:** ${sebep}`);
+      await interaction.reply(` ${user} **${branşIsmi}** branşına alındı.\n **Sebep:** ${sebep}`);
       
       log('BİLGİ', `Kullanıcı branşa alındı`, {
         yetkili: interaction.user.tag || interaction.user.id,

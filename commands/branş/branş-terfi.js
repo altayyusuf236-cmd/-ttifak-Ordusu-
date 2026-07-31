@@ -45,7 +45,7 @@ module.exports = {
       }
 
       await setRank(brans.oyunGrubuId, hedefRobloxId, sonrakiRol.rank);
-      await interaction.editReply(`✅ **${kullaniciAdi}** başarıyla terfi ettirildi.\n🔺 **Yeni Rütbe:** ${sonrakiRol.name}\n📝 **Sebep:** ${sebep}`);
+      await interaction.editReply(` **${kullaniciAdi}** başarıyla terfi ettirildi.\n **Yeni Rütbe:** ${sonrakiRol.name}\n **Sebep:** ${sebep}`);
       
       log('BILGI', 'Branş terfi edildi', { 
         yetkili: interaction.user.tag, 

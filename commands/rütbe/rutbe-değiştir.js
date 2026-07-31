@@ -73,7 +73,7 @@ module.exports = {
 
       const basarili = await setRank(kamp.oyunGrubuId, hedefRobloxId, hedefRol.rank);
       if (basarili) {
-        await interaction.editReply(`✅ **${kullaniciAdi}** başarıyla **${rutbeAdi}** rütbesine atandı.\n📝 **Sebep:** ${sebep}`);
+        await interaction.editReply(` **${kullaniciAdi}** başarıyla **${rutbeAdi}** rütbesine atandı.\n **Sebep:** ${sebep}`);
         log('BILGI', 'Ana kamp rütbe değiştirildi', { 
           yetkili: interaction.user.tag || interaction.user.id, 
           hedef: kullaniciAdi, 

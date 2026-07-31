@@ -39,7 +39,7 @@ module.exports = {
       }
 
       await setRank(kamp.oyunGrubuId, hedefRobloxId, sonrakiRol.rank);
-      await interaction.editReply(`✅ **${kullaniciAdi}** terfi ettirildi.\n🔺 **Yeni Rütbe:** ${sonrakiRol.name}\n📝 **Sebep:** ${sebep}`);
+      await interaction.editReply(` **${kullaniciAdi}** terfi ettirildi.\n **Yeni Rütbe:** ${sonrakiRol.name}\n **Sebep:** ${sebep}`);
       
       log('BILGI', 'Ana kamp terfi', { 
         yetkili: interaction.user.tag, 

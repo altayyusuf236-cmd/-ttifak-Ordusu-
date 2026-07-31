@@ -10,13 +10,15 @@ module.exports = {
     .setName('brans-rutbe-tenzil')
     .setDescription('Seçilen branş grubunda kullanıcıyı 1 rütbe düşürür')
     .addStringOption(opt => opt.setName('kullanici-adi').setDescription('Roblox kullanıcı adı').setRequired(true))
-    .addStringOption(opt => opt.setName('brans-ismi').setDescription('Branş adı').setRequired(true)),
+    .addStringOption(opt => opt.setName('brans-ismi').setDescription('Branş adı').setRequired(true))
+    .addStringOption(opt => opt.setName('sebep').setDescription('Tenzil sebebi').setRequired(true)),
 
-    async execute(interaction) {
+  async execute(interaction) {
     await interaction.reply('⏳ **Branş tenzil işlemi başlatılıyor...**');
 
     const kullaniciAdi = interaction.options.getString('kullanici-adi');
     const bransIsmi = interaction.options.getString('brans-ismi');
+    const sebep = interaction.options.getString('sebep');
 
     const kamp = await kampBul(interaction.guildId);
     if (!kamp) return interaction.editReply('❌ Bu sunucu bir kampa bağlı değil.');
@@ -43,8 +45,15 @@ module.exports = {
       }
 
       await setRank(brans.oyunGrubuId, hedefRobloxId, oncekiRol.rank);
-      await interaction.editReply(`✅ **${kullaniciAdi}** tenzil edildi. Yeni Rütbe: **${oncekiRol.name}**`);
-      log('BILGI', 'Branş tenzil edildi', { yetkili: interaction.user.tag, hedef: kullaniciAdi, brans: brans.isim, yeniRutbe: oncekiRol.name });
+      await interaction.editReply(`✅ **${kullaniciAdi}** tenzil edildi.\n🔻 **Yeni Rütbe:** ${oncekiRol.name}\n📝 **Sebep:** ${sebep}`);
+      
+      log('BILGI', 'Branş tenzil edildi', { 
+        yetkili: interaction.user.tag, 
+        hedef: kullaniciAdi, 
+        brans: brans.isim, 
+        yeniRutbe: oncekiRol.name,
+        sebep: sebep 
+      });
     } catch (err) {
       await interaction.editReply('❌ Tenzil işlemi başarısız oldu.');
     }

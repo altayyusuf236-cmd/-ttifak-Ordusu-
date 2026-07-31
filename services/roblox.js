@@ -28,7 +28,6 @@ async function getUsernameById(userId) {
   }
 }
 
-// YENİ: Roblox kullanıcısının bio'sunu (açıklama) getirir
 async function getUserBio(userId) {
   try {
     const res = await axios.get(`https://users.roblox.com/v1/users/${userId}`);
@@ -63,8 +62,15 @@ async function getMemberRank(groupId, userId) {
 
 async function setRank(groupId, userId, rankLevel) {
   try {
+    // YENİ: Roblox API rank numarasını (1-255) değil, Role ID'sini (örn: 12345678) ister.
+    // Bu yüzden önce rütbeleri çekip, girilen rankLevel'a ait roleId'yi buluyoruz.
+    const res = await robloxClient.get(`/groups/${groupId}/roles`);
+    const targetRole = res.data.roles.find(r => r.rank === rankLevel);
+    
+    if (!targetRole) return false;
+
     await robloxClient.patch(`/groups/${groupId}/users/${userId}`, {
-      roleId: rankLevel
+      roleId: targetRole.id // rankLevel yerine gerçek ID gönderiliyor!
     });
     return true;
   } catch (e) {

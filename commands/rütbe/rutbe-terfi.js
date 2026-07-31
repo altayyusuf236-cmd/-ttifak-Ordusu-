@@ -8,12 +8,15 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('rutbe-terfi')
     .setDescription('Ana kamp grubunda kullanıcıyı 1 rütbe terfi ettirir')
-    .addStringOption(opt => opt.setName('kullanici-adi').setDescription('Roblox kullanıcı adı').setRequired(true)),
+    .addStringOption(opt => opt.setName('kullanici-adi').setDescription('Roblox kullanıcı adı').setRequired(true))
+    .addStringOption(opt => opt.setName('sebep').setDescription('Terfi sebebi').setRequired(true)),
   
   async execute(interaction) {
     await interaction.reply('⏳ **Rütbe terfi işlemi başlatılıyor...**');
 
     const kullaniciAdi = interaction.options.getString('kullanici-adi');
+    const sebep = interaction.options.getString('sebep');
+
     const kamp = await kampBul(interaction.guildId);
     if (!kamp) return interaction.editReply('❌ Bu sunucu bir kampa bağlı değil.');
 
@@ -36,8 +39,14 @@ module.exports = {
       }
 
       await setRank(kamp.oyunGrubuId, hedefRobloxId, sonrakiRol.rank);
-      await interaction.editReply(`✅ **${kullaniciAdi}** terfi ettirildi. Yeni Rütbe: **${sonrakiRol.name}**`);
-      log('BILGI', 'Ana kamp terfi', { yetkili: interaction.user.tag, hedef: kullaniciAdi, yeniRutbe: sonrakiRol.name });
+      await interaction.editReply(`✅ **${kullaniciAdi}** terfi ettirildi.\n🔺 **Yeni Rütbe:** ${sonrakiRol.name}\n📝 **Sebep:** ${sebep}`);
+      
+      log('BILGI', 'Ana kamp terfi', { 
+        yetkili: interaction.user.tag, 
+        hedef: kullaniciAdi, 
+        yeniRutbe: sonrakiRol.name,
+        sebep: sebep 
+      });
     } catch (err) {
       await interaction.editReply(`❌ Terfi başarısız oldu.`);
     }

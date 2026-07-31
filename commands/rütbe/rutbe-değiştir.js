@@ -4,6 +4,9 @@ const kampBul = require('../../utils/kampBul');
 const { getUserIdByUsername, setRank, getGroupRoles } = require('../../services/roblox');
 const { log } = require('../../utils/logger');
 
+// Roblox istek sınırına takılmamak için basit bir önbellek haritası
+const rolOnbellek = new Map();
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('rutbe-degistir')
@@ -19,7 +22,21 @@ module.exports = {
       
       if (!kamp || !kamp.oyunGrubuId) return await interaction.respond([]);
 
-      const roller = await getGroupRoles(kamp.oyunGrubuId);
+      let roller = [];
+      const suAn = Date.now();
+      const onbellekVerisi = rolOnbellek.get(kamp.oyunGrubuId);
+
+      // Eğer roller önbellekte varsa ve 5 dakikadan eskiyse tekrar çekme, hafızadan kullan
+      if (onbellekVerisi && (suAn - onbellekVerisi.zaman < 300000)) {
+        roller = onbellekVerisi.roller;
+      } else {
+        // Önbellekte yoksa veya süresi dolduysa Roblox API'sinden çek ve hafızaya al
+        roller = await getGroupRoles(kamp.oyunGrubuId);
+        if (roller && roller.length > 0) {
+          rolOnbellek.set(kamp.oyunGrubuId, { roller: roller, zaman: suAn });
+        }
+      }
+
       if (!roller || roller.length === 0) return await interaction.respond([]);
 
       const filtrelenmis = roller.filter(rol => {

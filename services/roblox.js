@@ -1,4 +1,6 @@
 const axios = require('axios');
+
+// Cookie gerektiren yazma (Rank değiştirme / Ban) işlemleri için Axios client'ı
 const robloxClient = axios.create({
   baseURL: 'https://groups.roblox.com/v1',
   headers: {
@@ -7,6 +9,9 @@ const robloxClient = axios.create({
   }
 });
 
+/**
+ * Roblox kullanıcı adından Roblox ID bulur
+ */
 async function getUserIdByUsername(username) {
   try {
     const res = await axios.post('https://users.roblox.com/v1/usernames/users', {
@@ -15,28 +20,40 @@ async function getUserIdByUsername(username) {
     });
     return res.data.data[0] ? res.data.data[0].id : null;
   } catch (e) {
+    console.error('getUserIdByUsername Hatası:', e.response?.data || e.message);
     return null;
   }
 }
 
+/**
+ * Roblox ID'sinden Kullanıcı Adı bulur
+ */
 async function getUsernameById(userId) {
   try {
     const res = await axios.get(`https://users.roblox.com/v1/users/${userId}`);
     return res.data.name;
   } catch (e) {
+    console.error('getUsernameById Hatası:', e.response?.data || e.message);
     return null;
   }
 }
 
+/**
+ * Kullanıcının Roblox profilindeki "Hakkında (About)" metnini getirir (Doğrulama için)
+ */
 async function getUserBio(userId) {
   try {
     const res = await axios.get(`https://users.roblox.com/v1/users/${userId}`);
     return res.data.description || '';
   } catch (e) {
-    return null;
+    console.error('getUserBio Hatası:', e.response?.data || e.message);
+    return '';
   }
 }
 
+/**
+ * Kullanıcının üye olduğu tüm grupları ve rütbelerini listeler
+ */
 async function getUserGroups(userId) {
   try {
     const res = await axios.get(`https://groups.roblox.com/v2/users/${userId}/groups/roles`);
@@ -47,20 +64,35 @@ async function getUserGroups(userId) {
       roleRank: item.role.rank
     }));
   } catch (e) {
+    console.error('getUserGroups Hatası:', e.response?.data || e.message);
     return [];
   }
 }
 
+/**
+ * Kullanıcının belirli bir gruptaki rütbe seviyesini (1-255) döndürür. Grupta yoksa 0 döner.
+ */
 async function getMemberRank(groupId, userId) {
   try {
-    const res = await robloxClient.get(`/groups/${groupId}/users/${userId}`);
-    return res.data.role ? res.data.role.rank : 0;
+    if (!groupId || !userId) return 0;
+
+    const res = await axios.get(`https://groups.roblox.com/v2/users/${userId}/groups/roles`);
+    if (!res.data || !res.data.data) return 0;
+
+    const hedefGrup = res.data.data.find(
+      item => item.group && Number(item.group.id) === Number(groupId)
+    );
+
+    return hedefGrup ? hedefGrup.role.rank : 0;
   } catch (e) {
-    return null;
+    console.error(`getMemberRank Hatası (Group: ${groupId}, User: ${userId}):`, e.response?.data || e.message);
+    return 0;
   }
 }
 
-// YENİ: Rütbe çekme işlemini cookie'siz genel axios ile yapıyoruz (Yüklenmeme sorununu çözer)
+/**
+ * Grubun tüm rütbelerini/rollerini getirir (Cookie gerektirmez)
+ */
 async function getGroupRoles(groupId) {
   try {
     const res = await axios.get(`https://groups.roblox.com/v1/groups/${groupId}/roles`);
@@ -71,6 +103,9 @@ async function getGroupRoles(groupId) {
   }
 }
 
+/**
+ * Kullanıcının gruptaki rütbesini değiştirir (Cookie GEREKTİRİR)
+ */
 async function setRank(groupId, userId, rankLevel) {
   try {
     const roles = await getGroupRoles(groupId);
@@ -91,6 +126,9 @@ async function setRank(groupId, userId, rankLevel) {
   }
 }
 
+/**
+ * Rütbe adına göre gruptaki rütbe seviyesini (rank) bulur
+ */
 async function getRankLevelByName(groupId, rankName) {
   try {
     const roles = await getGroupRoles(groupId);
@@ -101,6 +139,9 @@ async function getRankLevelByName(groupId, rankName) {
   }
 }
 
+/**
+ * Kullanıcıyı gruptan sürgün eder / atar (Cookie GEREKTİRİR)
+ */
 async function banFromGroup(groupId, userId) {
   try {
     await robloxClient.delete(`/groups/${groupId}/users/${userId}`);
@@ -111,6 +152,9 @@ async function banFromGroup(groupId, userId) {
   }
 }
 
+/**
+ * Grup duvarındaki son paylaşım tarihine bakarak aktiflik kontrol eder
+ */
 async function getGroupActivity(groupId) {
   try {
     const res = await axios.get(`https://groups.roblox.com/v1/groups/${groupId}/wall/posts?limit=1`);

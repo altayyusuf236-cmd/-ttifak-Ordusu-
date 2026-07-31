@@ -1,23 +1,32 @@
 const { SlashCommandBuilder } = require('discord.js');
 const Kullanici = require('../../models/Kullanici');
+const DogrulamaKodu = require('../../models/DogrulamaKodu');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('doğrulama-sıfırla')
-    .setDescription('Mevcut doğrulamayı sıfırlar (başka hesap bağlamak için)'),
-  async execute(interaction) {
-    const kayit = await Kullanici.findOne({ discordId: interaction.user.id });
-    if (!kayit) {
-      return interaction.reply({ content: '❌ Zaten doğrulanmış bir hesabınız yok.', ephemeral: true });
-    }
+    .setName('dogrulama-sifirla') // Discord slash isimlerinde Türkçe karakter (ğ, ı) KULLANILAMAZ!
+    .setDescription('Mevcut Roblox doğrulamasını sıfırlar (başka hesap bağlamak için)'),
 
-    if (kayit.dogrulandi) {
-      await Kullanici.deleteOne({ discordId: kayit._id });
-      return interaction.reply({ content: '✅ Doğrulamanız sıfırlandı. Yeni bir doğrulama için `/doğrula` kullanabilirsiniz.', ephemeral: true });
-    } else {
-      // Zaten doğrulanmamış ama kayıt varsa sil
-      await Kullanici.deleteOne({ discordId: kayit._id });
-      return interaction.reply({ content: '✅ Kaydınız temizlendi. Tekrar deneyebilirsiniz.', ephemeral: true });
+  async execute(interaction) {
+    await interaction.deferReply({ ephemeral: true });
+
+    try {
+      const kayit = await Kullanici.findOne({ discordId: interaction.user.id });
+
+      // Olası bekleyen / yarım kalmış doğrulama kodlarını da temizleyelim
+      await DogrulamaKodu.deleteMany({ discordId: interaction.user.id });
+
+      if (!kayit) {
+        return interaction.editReply('❌ Sistemde zaten doğrulanmış veya kayıtlı bir hesabınız bulunmuyor.');
+      }
+
+      // HATA DÜZELTİLDİ: kayit._id doğrudan Mongo ID'si ile silinmeli
+      await Kullanici.deleteOne({ _id: kayit._id });
+
+      return interaction.editReply('✅ Roblox hesap doğrulamanız başarıyla sıfırlandı! Şimdi **/dogrula-baslat** ile doğru Roblox hesabınızı bağlayabilirsiniz.');
+    } catch (error) {
+      console.error('Doğrulama sıfırlama hatası:', error);
+      return interaction.editReply('❌ Sıfırlama işlemi sırasında bir veritabanı hatası oluştu.');
     }
   }
 };

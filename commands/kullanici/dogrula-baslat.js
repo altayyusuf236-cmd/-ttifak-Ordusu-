@@ -15,6 +15,7 @@ module.exports = {
     .setName('dogrula-baslat')
     .setDescription('Doğrulama kodunu başlatır')
     .addStringOption(opt => opt.setName('roblox-adi').setDescription('Roblox kullanıcı adı').setRequired(true)),
+    
   async execute(interaction) {
     await interaction.deferReply({ ephemeral: true });
 
@@ -37,15 +38,17 @@ module.exports = {
       kod: kod
     });
 
+    const rehberMesaj = `🔑 Doğrulama kodunuz: \`${kod}\`\n👉 Lütfen bu kodu **Roblox profilinizdeki Hakkında (About)** kısmına yapıştırın ve ardından **/dogrula-tamamla** komutunu çalıştırın.`;
+
     let dmGonderildi = false;
     try {
-      await interaction.user.send(`🔑 Doğrulama kodunuz: \`${kod}\`\n1 dakika içinde Discord açıklamanıza yazın ve **/dogrula-tamamla** yapın.`);
+      await interaction.user.send(rehberMesaj);
       dmGonderildi = true;
     } catch (e) {}
 
     await interaction.editReply(dmGonderildi
-      ? '✅ Kod DM ile gönderildi. Açıklamaya yazıp **/dogrula-tamamla** yapın.'
-      : `⚠️ DM gönderilemedi. Kod: \`${kod}\`\nAçıklamaya yazıp **/dogrula-tamamla** yapın.`
+      ? '✅ Kod DM ile gönderildi. Roblox profilinize ekleyip **/dogrula-tamamla** yapın.'
+      : `⚠️ DM gönderilemedi.\n🔑 Kodunuz: \`${kod}\`\nRoblox profilinizin **Hakkında** kısmına yazıp **/dogrula-tamamla** yapın.`
     );
   }
 };

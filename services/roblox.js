@@ -60,29 +60,41 @@ async function getMemberRank(groupId, userId) {
   }
 }
 
+// YENİ: Rütbe çekme işlemini cookie'siz genel axios ile yapıyoruz (Yüklenmeme sorununu çözer)
+async function getGroupRoles(groupId) {
+  try {
+    const res = await axios.get(`https://groups.roblox.com/v1/groups/${groupId}/roles`);
+    return res.data.roles || [];
+  } catch (e) {
+    console.error('getGroupRoles Hatası:', e.response?.data || e.message);
+    return [];
+  }
+}
+
 async function setRank(groupId, userId, rankLevel) {
   try {
-    // YENİ: Roblox API rank numarasını (1-255) değil, Role ID'sini (örn: 12345678) ister.
-    // Bu yüzden önce rütbeleri çekip, girilen rankLevel'a ait roleId'yi buluyoruz.
-    const res = await robloxClient.get(`/groups/${groupId}/roles`);
-    const targetRole = res.data.roles.find(r => r.rank === rankLevel);
+    const roles = await getGroupRoles(groupId);
+    const targetRole = roles.find(r => r.rank === Number(rankLevel) || r.id === Number(rankLevel));
     
-    if (!targetRole) return false;
+    if (!targetRole) {
+      console.error(`Rütbe bulunamadı: GroupID: ${groupId}, RankLevel: ${rankLevel}`);
+      return false;
+    }
 
     await robloxClient.patch(`/groups/${groupId}/users/${userId}`, {
-      roleId: targetRole.id // rankLevel yerine gerçek ID gönderiliyor!
+      roleId: targetRole.id
     });
     return true;
   } catch (e) {
-    console.error('Roblox rank hatası:', e.response?.data || e.message);
+    console.error('Roblox setRank hatası:', e.response?.data || e.message);
     return false;
   }
 }
 
 async function getRankLevelByName(groupId, rankName) {
   try {
-    const res = await robloxClient.get(`/groups/${groupId}/roles`);
-    const role = res.data.roles.find(r => r.name.toLowerCase() === rankName.toLowerCase());
+    const roles = await getGroupRoles(groupId);
+    const role = roles.find(r => r.name.toLowerCase() === rankName.toLowerCase());
     return role ? role.rank : null;
   } catch (e) {
     return null;
@@ -108,15 +120,6 @@ async function getGroupActivity(groupId) {
     return diff < 7 * 24 * 60 * 60 * 1000;
   } catch (e) {
     return false;
-  }
-}
-
-async function getGroupRoles(groupId) {
-  try {
-    const res = await robloxClient.get(`/groups/${groupId}/roles`);
-    return res.data.roles;
-  } catch (e) {
-    return [];
   }
 }
 

@@ -9,23 +9,35 @@ module.exports = {
     .setName('rutbe-degistir')
     .setDescription('Ana kamp grubunda rütbe değiştirir')
     .addStringOption(opt => opt.setName('kullanici-adi').setDescription('Roblox kullanıcı adı').setRequired(true))
-    .addStringOption(opt => opt.setName('rutbe-adi').setDescription('Hedef rütbe adı').setRequired(true).setAutocomplete(true)),
+    .addStringOption(opt => opt.setName('rutbe-adi').setDescription('Hedef rütbe adı').setRequired(true).setAutocomplete(true))
+    .addStringOption(opt => opt.setName('sebep').setDescription('Rütbe değiştirme sebebi').setRequired(true)),
 
   async autocomplete(interaction) {
-    const focusedValue = interaction.options.getFocused();
-    const kamp = await kampBul(interaction.guildId);
-    if (!kamp) return await interaction.respond([]);
-
     try {
+      const focusedValue = String(interaction.options.getFocused() || '').toLowerCase();
+      const kamp = await kampBul(interaction.guildId);
+      
+      if (!kamp || !kamp.oyunGrubuId) return await interaction.respond([]);
+
       const roller = await getGroupRoles(kamp.oyunGrubuId);
-      const filtrelenmis = roller.filter(rol => 
-        rol.rank <= (kamp.maxRutbe || 255) && 
-        rol.rank > 0 && 
-        rol.name.toLowerCase().includes(focusedValue.toLowerCase())
+      if (!roller || roller.length === 0) return await interaction.respond([]);
+
+      const filtrelenmis = roller.filter(rol => {
+        const rutbeAdi = String(rol.name || '').toLowerCase();
+        return rol.rank <= (kamp.maxRutbe || 255) && 
+               rol.rank > 0 && 
+               rutbeAdi.includes(focusedValue);
+      });
+
+      await interaction.respond(
+        filtrelenmis.slice(0, 25).map(rol => ({
+          name: String(rol.name).substring(0, 100),
+          value: String(rol.name).substring(0, 100)
+        }))
       );
-      await interaction.respond(filtrelenmis.slice(0, 25).map(rol => ({ name: rol.name, value: rol.name })));
     } catch (error) {
-      await interaction.respond([]);
+      console.error('Autocomplete Hatası (Ana Kamp):', error);
+      await interaction.respond([]).catch(() => {});
     }
   },
 
@@ -34,6 +46,7 @@ module.exports = {
 
     const kullaniciAdi = interaction.options.getString('kullanici-adi');
     const rutbeAdi = interaction.options.getString('rutbe-adi');
+    const sebep = interaction.options.getString('sebep');
 
     const kamp = await kampBul(interaction.guildId);
     if (!kamp) return interaction.editReply('❌ Bu sunucu bir kampa bağlı değil.');
@@ -60,8 +73,13 @@ module.exports = {
 
       const basarili = await setRank(kamp.oyunGrubuId, hedefRobloxId, hedefRol.rank);
       if (basarili) {
-        await interaction.editReply(`✅ **${kullaniciAdi}** başarıyla **${rutbeAdi}** rütbesine atandı.`);
-        log('BILGI', 'Ana kamp rütbe değiştirildi', { yetkili: interaction.user.tag, hedef: kullaniciAdi, yeniRutbe: rutbeAdi });
+        await interaction.editReply(`✅ **${kullaniciAdi}** başarıyla **${rutbeAdi}** rütbesine atandı.\n📝 **Sebep:** ${sebep}`);
+        log('BILGI', 'Ana kamp rütbe değiştirildi', { 
+          yetkili: interaction.user.tag || interaction.user.id, 
+          hedef: kullaniciAdi, 
+          yeniRutbe: rutbeAdi,
+          sebep: sebep 
+        });
       } else {
         await interaction.editReply(`❌ Rütbe değiştirilemedi. Bot yetkilerini kontrol edin.`);
       }
